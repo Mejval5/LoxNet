@@ -5,6 +5,10 @@ namespace Lox.Data;
 
 public class LoxClass : ICallable
 {
+    public string Name { get; }
+    private LoxClass? Superclass { get; }
+    private Dictionary<string, RuntimeFunction> Methods { get; }
+
     public int Arity
     {
         get
@@ -13,8 +17,6 @@ public class LoxClass : ICallable
             return initializer?.Arity ?? 0;
         }
     }
-    public string Name { get; }
-    private Dictionary<string, RuntimeFunction> _methods;
     
     public object? Call(Interpreter interpreter, List<object?> arguments, int line)
     {
@@ -26,10 +28,11 @@ public class LoxClass : ICallable
         return instance;
     }
 
-    public LoxClass(string name, Dictionary<string, RuntimeFunction> methods)
+    public LoxClass(string name, LoxClass? superclass, Dictionary<string, RuntimeFunction> methods)
     {
         Name = name;
-        _methods = methods;
+        Superclass = superclass;
+        Methods = methods;
     }
     
     public override string ToString()
@@ -37,9 +40,13 @@ public class LoxClass : ICallable
         return Name;
     }
 
-    public RuntimeFunction? FindMethod(string exprNameLexeme)
+    public RuntimeFunction? FindMethod(string methodName)
     {
-        _methods.TryGetValue(exprNameLexeme, out RuntimeFunction? value);
-        return value;
+        if (Methods.TryGetValue(methodName, out RuntimeFunction? value))
+        {
+            return value;
+        }
+        
+        return Superclass?.FindMethod(methodName);
     }
 }

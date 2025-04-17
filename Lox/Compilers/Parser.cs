@@ -64,6 +64,12 @@ public class Parser
     {
         Token name = Consume(TokenType.Identifier, "Expect class name.");
         
+        Variable? superclass = null;
+        if (Match(TokenType.Less)) {
+            Consume(TokenType.Identifier, "Expect superclass name.");
+            superclass = new Variable(Previous());
+        }
+        
         Consume(TokenType.LeftBrace, "Expect '{' before class body.");
         List<Function> methods = [];
         while (CheckCurrent(TokenType.RightBrace) == false && IsAtEnd() == false)
@@ -72,7 +78,7 @@ public class Parser
         }
         
         Consume(TokenType.RightBrace, "Expect '}' after class body.");
-        return new Class(name, methods);
+        return new Class(name, superclass, methods);
     }
 
     /// <summary>

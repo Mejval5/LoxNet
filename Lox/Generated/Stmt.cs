@@ -1,4 +1,5 @@
-﻿using Lox.Types;
+﻿using Lox.Functions;
+using Lox.Types;
 
 namespace Lox.Generated;
 
@@ -38,11 +39,13 @@ public class Block : Stmt
 public class Class : Stmt
 {
     public Token Name { get; }
+    public Variable? Superclass { get; }
     public List<Function> Methods { get; }
 
-    public Class(Token name, List<Function> methods)
+    public Class(Token name, Variable? superclass, List<Function> methods)
     {
         Name = name;
+        Superclass = superclass;
         Methods = methods;
     }
 

@@ -1,4 +1,5 @@
-﻿using Lox.Generated;
+﻿
+using Lox.Generated;
 using Lox.Logging;
 using Lox.Types;
 using Void = Lox.Data.Void;
@@ -31,6 +32,16 @@ public class Resolver : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
         _currentClass = ClassType.Class;
         Declare(stmt.Name);
         Define(stmt.Name);
+        
+        if (stmt.Superclass != null)
+        {
+            if (stmt.Name.Lexeme == stmt.Superclass.Name.Lexeme)
+            {
+                Log.Error(stmt.Superclass.Name, "A class can't inherit from itself.");
+            }
+            
+            Resolve(stmt.Superclass);
+        }
         
         BeginScope();
         _scopes.Last()["this"] = true;
