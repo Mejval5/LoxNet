@@ -10,6 +10,7 @@ public class Resolver : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
     private readonly List<Dictionary<string, bool>> _scopes = [];
     private readonly Interpreter _interpreter;
     private FunctionType _currentFunction = FunctionType.None;
+    private ClassType _currentClass = ClassType.None;
     
     public Resolver(Interpreter interpreter)
     {
@@ -21,6 +22,30 @@ public class Resolver : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
         BeginScope();
         Resolve(stmt.Statements);
         EndScope();
+        return Void.Null;
+    }
+
+    public Void VisitClassStmt(Class stmt)
+    {
+        ClassType prevClassType = _currentClass;
+        _currentClass = ClassType.Class;
+        Declare(stmt.Name);
+        Define(stmt.Name);
+        
+        BeginScope();
+        _scopes.Last()["this"] = true;
+        foreach (Function method in stmt.Methods)
+        {
+            FunctionType functionType = FunctionType.Method;
+            if (method.Name!.Lexeme == "this")
+            {
+                functionType = FunctionType.Initializer;
+            }
+            ResolveFunction(method, functionType);
+        }
+        EndScope();
+        _currentClass = prevClassType;
+        
         return Void.Null;
     }
 
@@ -87,11 +112,18 @@ public class Resolver : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
         {
             Log.Error(stmt.Keyword, "Cannot return from anonymous function.");
         }
-        
-        if (stmt.Value != null)
+
+        if (stmt.Value == null)
         {
-            Resolve(stmt.Value);
+            return Void.Null;
         }
+
+        if (_currentFunction is FunctionType.Initializer)
+        {
+            Log.Error(stmt.Keyword, "Cannot return a value from initializer function.");
+        }
+            
+        Resolve(stmt.Value);
 
         return Void.Null;
     }
@@ -205,6 +237,12 @@ public class Resolver : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
         return null;
     }
 
+    public object? VisitGetExpr(Get expr)
+    {
+        Resolve(expr.Container);
+        return null;
+    }
+
     public object? VisitGroupingExpr(Grouping expr)
     {
         Resolve(expr.Expression);
@@ -220,6 +258,24 @@ public class Resolver : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
     {
         Resolve(expr.Left);
         Resolve(expr.Right);
+        return null;
+    }
+
+    public object? VisitSetExpr(Set expr)
+    {
+        Resolve(expr.Value);
+        Resolve(expr.Container);
+        return null;
+    }
+
+    public object? VisitThisExpr(This expr)
+    { 
+        if (_currentClass == ClassType.None) {
+            Log.Error(expr.Keyword, "Can't use 'this' outside of a class.");
+            return null;
+        }
+        
+        ResolveLocal(expr, expr.Keyword);
         return null;
     }
 

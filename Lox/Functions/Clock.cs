@@ -8,7 +8,7 @@ public class Clock : ICallable
     public string Name => nameof(Clock).ToLower();
     public int Arity => 0;
     
-    public object? Call(Interpreter interpreter, List<object?> arguments)
+    public object? Call(Interpreter interpreter, List<object?> arguments, int parenLine)
     {
         return DateTime.Now.Ticks / (double)TimeSpan.TicksPerSecond;
     }

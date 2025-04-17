@@ -73,7 +73,7 @@ public class Interpreter : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
 
     public object? VisitAnonFunExpr(AnonFun expr)
     {
-        RuntimeFunction runtimeFunction = new(expr.Fun, _environment);
+        RuntimeFunction runtimeFunction = new(expr.Fun, _environment, false);
         return runtimeFunction;
     }
 
@@ -129,7 +129,18 @@ public class Interpreter : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
             throw new RuntimeException(expr.Paren.Line, $"Expected {loxCallable.Arity} arguments but got {arguments.Count}.");
         }
 
-        return loxCallable.Call(this, arguments);
+        return loxCallable.Call(this, arguments, expr.Paren.Line);
+    }
+
+    public object? VisitGetExpr(Get expr)
+    {
+        object? obj = Evaluate(expr.Container);
+        if (obj is LoxInstance instance)
+        {
+            return instance.Get(expr.Name);
+        }
+        
+        throw new RuntimeException(expr.Name.Line, "Only instances have properties.");
     }
 
     private bool AreEqual(object? left, object? right)
@@ -199,6 +210,25 @@ public class Interpreter : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
         return Evaluate(expr.Right);
     }
 
+    public object? VisitSetExpr(Set expr)
+    {
+        object? container = Evaluate(expr.Container);
+
+        if (container is not LoxInstance loxInstance)
+        {
+            throw new RuntimeException(expr.Name.Line, "You are trying to access property of non instance object");
+        }
+
+        object? value = Evaluate(expr.Value);
+        loxInstance.Set(expr.Name, value);
+        return value;
+    }
+
+    public object? VisitThisExpr(This expr)
+    {
+        return LookUpVariable(expr.Keyword, expr);
+    }
+
     public object? VisitUnaryExpr(Unary expr)
     {
         object? right = Evaluate(expr.Right);
@@ -216,10 +246,10 @@ public class Interpreter : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
         return LookUpVariable(expr.Name, expr);
     }
 
-    private object? LookUpVariable(Token exprName, Variable expr)
+    private object? LookUpVariable(Token exprName, Expr expr)
     {
         return _locals.TryGetValue(expr, out int distance) 
-                   ? _environment.GetAt(distance, exprName) 
+                   ? _environment.GetAt(distance, exprName.Lexeme, exprName.Line) 
                    : _globals.Get(exprName);
 
     }
@@ -255,6 +285,21 @@ public class Interpreter : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
         return Void.Null;
     }
 
+    public Void VisitClassStmt(Class stmt)
+    {
+        _environment.Define(stmt.Name, null);
+        
+        Dictionary<string, RuntimeFunction> methods = new ();
+        foreach (Function method in stmt.Methods) {
+            RuntimeFunction function = new (method, _environment, method.Name!.Lexeme == "init");
+            methods.Add(method.Name!.Lexeme, function);
+        }
+        
+        LoxClass loxClass = new (stmt.Name.Lexeme,  methods);
+        _environment.Assign(stmt.Name, loxClass);
+        return Void.Null;
+    }
+
     public void ExecuteBlock(List<Stmt> statements, Environment environment)
     {
         Environment prevEnvironment = _environment;
@@ -281,8 +326,8 @@ public class Interpreter : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
 
     public Void VisitFunctionStmt(Function stmt)
     {
-        RuntimeFunction runtimeFunction = new(stmt, _environment);
-        _environment.Define(stmt.Name, runtimeFunction);
+        RuntimeFunction runtimeFunction = new(stmt, _environment, false);
+        _environment.Define(stmt.Name!, runtimeFunction);
         return Void.Null;
     }
 

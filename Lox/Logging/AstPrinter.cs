@@ -53,6 +53,11 @@ public class AstPrinter : Expr.IVisitor<string>
         return call;
     }
 
+    public string VisitGetExpr(Get expr)
+    {
+        return $"{expr.Accept(this)}.{expr.Name}";
+    }
+
     public string VisitGroupingExpr(Grouping expr)
     {
         return Parenthesize("group", expr.Expression);
@@ -71,6 +76,16 @@ public class AstPrinter : Expr.IVisitor<string>
     public string VisitLogicalExpr(Logical expr)
     {
         return expr.Left.Accept(this) + expr.Op.Lexeme + expr.Right.Accept(this);
+    }
+
+    public string VisitSetExpr(Set expr)
+    {
+        return $"{expr.Container.Accept(this)}.{expr.Name.Lexeme} = {expr.Value.Accept(this)}";
+    }
+
+    public string VisitThisExpr(This expr)
+    {
+        return "this";
     }
 
     public string VisitUnaryExpr(Unary expr)

@@ -4,5 +4,7 @@ public enum FunctionType
 {
     None,
     Function,
-    AnonymousFunction
+    AnonymousFunction,
+    Method,
+    Initializer,
 }

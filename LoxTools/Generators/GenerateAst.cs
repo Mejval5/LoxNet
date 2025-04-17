@@ -26,9 +26,12 @@ public static class GenerateAst
                       "Assign   : Token name, Expr value",
                       "Binary   : Expr left, Token op, Expr right",
                       "Call     : Expr callee, Token paren, List<Expr> arguments",
+                      "Get      : Expr container, Token name",
                       "Grouping : Expr expression",
                       "Literal  : object? value",
                       "Logical  : Expr left, Token op, Expr right",
+                      "Set      : Expr container, Token name, Expr value",
+                      "This     : Token keyword",
                       "Unary    : Token op, Expr right",
                       "Variable : Token name"
                   ]);
@@ -37,6 +40,7 @@ public static class GenerateAst
                   "Stmt",
                   [
                       "Block      : List<Stmt> statements",
+                      "Class      : Token name, List<Function> methods",
                       "Expression : Expr expr",
                       "Function   : Token? name, List<Token> parameters, List<Stmt> body",
                       "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",

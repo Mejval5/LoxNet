@@ -61,20 +61,20 @@ public class Environment
         throw new RuntimeException(identifier.Line, $"Undefined variable '{identifier.Lexeme}'.");
     }
 
-    public object? GetAt(int distance, Token exprName)
+    public object? GetAt(int distance, string varName, int line)
     {
         Environment? targetEnv = Ancestor(distance);
         if (targetEnv == null)
         {
-            throw new RuntimeException(exprName.Line, $"Could not find scope of variable '{exprName.Lexeme}'.");
+            throw new RuntimeException(line, $"Could not find scope of variable '{varName}'.");
         }
 
-        if (targetEnv.Values.TryGetValue(exprName.Lexeme, out object? value))
+        if (targetEnv.Values.TryGetValue(varName, out object? value))
         {
             return value;
         }
         
-        throw new RuntimeException(exprName.Line, $"Undefined variable '{exprName.Lexeme}'.");
+        throw new RuntimeException(line, $"Undefined variable '{varName}'.");
     }
 
     private Environment? Ancestor(int distance)

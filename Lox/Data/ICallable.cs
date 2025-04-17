@@ -6,5 +6,5 @@ public interface ICallable
 {
     int Arity { get; }
     string Name { get; }
-    object? Call(Interpreter interpreter, List<object?> arguments);
+    object? Call(Interpreter interpreter, List<object?> arguments, int line);
 }

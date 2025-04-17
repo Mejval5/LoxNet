@@ -41,6 +41,11 @@ public class Parser
                 return VarDeclaration();
             }
 
+            if (Match(TokenType.Class))
+            {
+                return ClassDeclaration();
+            }
+
             if (Match(TokenType.Fun))
             {
                 return Function("function", false);
@@ -54,7 +59,22 @@ public class Parser
             return null;
         }
     }
-    
+
+    private Stmt ClassDeclaration()
+    {
+        Token name = Consume(TokenType.Identifier, "Expect class name.");
+        
+        Consume(TokenType.LeftBrace, "Expect '{' before class body.");
+        List<Function> methods = [];
+        while (CheckCurrent(TokenType.RightBrace) == false && IsAtEnd() == false)
+        {
+            methods.Add(Function("method", false));
+        }
+        
+        Consume(TokenType.RightBrace, "Expect '}' after class body.");
+        return new Class(name, methods);
+    }
+
     /// <summary>
     ///     function → IDENTIFIER "(" parameters? ")" block ;
     /// </summary>
@@ -348,12 +368,17 @@ public class Parser
             return new Assign(identifier, value);
         }
 
+        if (expr is Get get)
+        {
+            return new Set(get.Container, get.Name, value);
+        }
+
         Error(equals, "Invalid assignment target.");
 
         return expr;
     }
 
-    private Expr Or()
+        private Expr Or()
     {
         Expr expr = And();
         while (Match(TokenType.Or))
@@ -480,6 +505,9 @@ public class Parser
             if (Match(TokenType.LeftParenthesis))
             {
                 expr = CallParams(expr);
+            } else if (Match(TokenType.Dot)) {
+                Token name = Consume(TokenType.Identifier, "Expect property name after '.'.");
+                expr = new Get(expr, name);
             }
             else
             {
@@ -538,6 +566,11 @@ public class Parser
         if (Match(TokenType.Number, TokenType.String))
         {
             return new Literal(Previous().Literal);
+        }
+        
+        if (Match(TokenType.This))
+        {
+            return new This(Previous());
         }
 
         if (Match(TokenType.Identifier))
