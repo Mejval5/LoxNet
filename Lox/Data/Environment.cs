@@ -5,7 +5,7 @@ namespace Lox.Data;
 
 public class Environment
 {
-    private readonly Environment? Enclosing;
+    public readonly Environment? Enclosing;
     private Dictionary<string, object?> Values { get; } = new();
 
     public Environment(Environment? enclosing = null)

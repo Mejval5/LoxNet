@@ -1,5 +1,4 @@
-﻿using Lox.Functions;
-using Lox.Types;
+﻿using Lox.Types;
 
 namespace Lox.Generated;
 

@@ -83,6 +83,11 @@ public class AstPrinter : Expr.IVisitor<string>
         return $"{expr.Container.Accept(this)}.{expr.Name.Lexeme} = {expr.Value.Accept(this)}";
     }
 
+    public string VisitSuperExpr(Super expr)
+    {
+        return $"super.{expr.Method.Lexeme}";
+    }
+
     public string VisitThisExpr(This expr)
     {
         return "this";

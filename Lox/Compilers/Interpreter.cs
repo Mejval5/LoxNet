@@ -224,6 +224,30 @@ public class Interpreter : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
         return value;
     }
 
+    public object? VisitSuperExpr(Super expr)
+    {
+        int distance = _locals[expr];
+        LoxClass? superclass = (LoxClass?) _environment.GetAt(distance, "super", expr.Keyword.Line);
+        LoxInstance? loxObject = (LoxInstance?)_environment.GetAt(distance - 1, "this", expr.Keyword.Line);
+        if (superclass == null)
+        {
+            throw new RuntimeException(expr.Keyword.Line, "Cannot find super class.");
+        }
+        if (loxObject == null)
+        {
+            throw new RuntimeException(expr.Keyword.Line, "Cannot find super invoker.");
+        }
+        
+        RuntimeFunction? method = superclass.FindMethod(expr.Method.Lexeme);
+        
+        if (method == null)
+        {
+            throw new RuntimeException(expr.Keyword.Line, $"Undefined property {expr.Keyword.Lexeme}.");
+        }
+        
+        return method.Bind(loxObject, expr.Keyword.Line);
+    }
+
     public object? VisitThisExpr(This expr)
     {
         return LookUpVariable(expr.Keyword, expr);
@@ -298,6 +322,12 @@ public class Interpreter : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
         }
         _environment.Define(stmt.Name, null);
         
+        if (stmt.Superclass != null)
+        {
+            _environment = new Environment(_environment);
+            _environment.Define("super", stmt.Superclass.Name.Line, superclass);
+        }
+        
         Dictionary<string, RuntimeFunction> methods = new ();
         foreach (Function method in stmt.Methods) {
             RuntimeFunction function = new (method, _environment, method.Name!.Lexeme == "init");
@@ -305,6 +335,12 @@ public class Interpreter : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
         }
         
         LoxClass loxClass = new (stmt.Name.Lexeme, superclass as LoxClass, methods);
+        
+        if (superclass != null)
+        {
+            _environment = _environment.Enclosing!;
+        }
+        
         _environment.Assign(stmt.Name, loxClass);
         return Void.Null;
     }

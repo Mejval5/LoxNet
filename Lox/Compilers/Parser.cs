@@ -573,6 +573,11 @@ public class Parser
         {
             return new Literal(Previous().Literal);
         }
+
+        if (Match(TokenType.Super))
+        {
+            return Super();
+        }
         
         if (Match(TokenType.This))
         {
@@ -592,6 +597,14 @@ public class Parser
         }
 
         throw Error(Peek(), "Expect expression.");
+    }
+
+    private Super Super()
+    {
+        Token keyword = Previous();
+        Consume(TokenType.Dot, "Expect '.' after 'super'.");
+        Token method = Consume(TokenType.Identifier, "Expected super class method after '.'");
+        return new Super(keyword, method);
     }
 
     private void Synchronize()

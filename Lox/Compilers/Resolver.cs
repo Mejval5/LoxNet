@@ -35,12 +35,17 @@ public class Resolver : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
         
         if (stmt.Superclass != null)
         {
+            _currentClass = ClassType.Subclass;
+            
             if (stmt.Name.Lexeme == stmt.Superclass.Name.Lexeme)
             {
                 Log.Error(stmt.Superclass.Name, "A class can't inherit from itself.");
             }
             
             Resolve(stmt.Superclass);
+            
+            BeginScope();
+            _scopes.Last().Add("super", true);
         }
         
         BeginScope();
@@ -56,6 +61,11 @@ public class Resolver : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
         }
         EndScope();
         _currentClass = prevClassType;
+
+        if (stmt.Superclass != null)
+        {
+            EndScope();
+        }
         
         return Void.Null;
     }
@@ -276,6 +286,18 @@ public class Resolver : Expr.IVisitor<object?>, Stmt.IVisitor<Void>
     {
         Resolve(expr.Value);
         Resolve(expr.Container);
+        return null;
+    }
+
+    public object? VisitSuperExpr(Super expr)
+    {
+        if (_currentClass is ClassType.None)
+        {
+            Log.Error(expr.Keyword, "Can't use 'super' outside of a class.");
+        } else if (_currentClass != ClassType.Subclass) {
+            Log.Error(expr.Keyword, "Can't use 'super' in a class with no superclass.");
+        }
+        ResolveLocal(expr, expr.Keyword);
         return null;
     }
 
